@@ -9,9 +9,6 @@ class User:
     self.steamid = steamid
     self.name = name
     self.hwid = hwid
-    if len(seen) > 0:
-      self.last_seen: seen['last_seen']
-      self.first_seen: seen['last_seen']
 
   @staticmethod
   def longIP(ip):
