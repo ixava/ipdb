@@ -104,10 +104,12 @@ class Plugin:
                     nick = hwinfo.group(1).encode().decode('unicode-escape')
                     hwid = hwinfo.group(2)
                     for x in range(MSG_QUEUE.qsize()):
-                        [joinData,enterTime] = MSG_QUEUE.get(block=True)
+                        [joinData,enterTime] = MSG_QUEUE.get(block=True) if not MSG_QUEUE.empty() else False
+                        if not joinData:
+                            break
                         if nick == joinData['name']:
                             joinData['hwid'] = hwid
-                        elif time.time() - enterTime > 10:
+                        elif (time.time() - enterTime) > 10:
                             joinData['hwid']  = '-'
                         else:
                             MSG_QUEUE.put([joinData,enterTime])
@@ -126,9 +128,9 @@ class Plugin:
 
     def makeTable(self, data):
       tableData = []
-      tableHeaders = ["Nick", "IP", "steamid", "hwid", "Hostname", "first_seen", "last_seen"]
+      tableHeaders = ["ID","Nick", "IP", "steamid", "hwid", "Hostname", "last_seen"]
       for user in data:
-        tableData.append([user['name'], user['ip'], user['steamid'], user['hwid'], user['hostname'], user['first_seen'],user['last_seen']])
+        tableData.append([user['id'],user['name'], user['ip'], user['steamid'], user['hwid'], user['hostname'],user['last_seen']])
       table = tabulate(tableData, tableHeaders)
       return table.split('\n')
 
