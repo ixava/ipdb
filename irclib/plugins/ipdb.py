@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from irc3.plugins.command import command
-import irc3, re, socket
+import irc3, re, socket, queue, time
 from db import IPDB
 from user import User
 from tabulate import tabulate
 
 CFG = irc3.utils.parse_config('ipdb', 'ipdb.ini')
-MSG_QUEUE = {}
+MSG_QUEUE = queue.Queue()
 
 @irc3.plugin
 class Plugin:
@@ -95,27 +95,25 @@ class Plugin:
                 joinData['steamid'] = playerjoin.group(3)
                 if not joinData['steamid']:
                     joinData['steamid'] = "-"
-                MSG_QUEUE[joinData['name']] = joinData
+                MSG_QUEUE.put([joinData,time.time()])
 
             else:
                 regex3 = re.compile("^\[Player\].*[\d]{1,5},(.+)hwid(.*)")
                 hwinfo = regex3.search(noMarkup)
                 if hwinfo:
                     nick = hwinfo.group(1).encode().decode('unicode-escape')
-                    if nick in MSG_QUEUE:
-                        user = MSG_QUEUE[nick]
-                        user['hwid'] = hwinfo.group(2)
-
-                        userObj = User(**user)
+                    hwid = hwinfo.group(2)
+                    for x in range(MSG_QUEUE.qsize()):
+                        [joinData,enterTime] = MSG_QUEUE.get(block=True)
+                        if nick == joinData['name']:
+                            joinData['hwid'] = hwid
+                        elif time.time() - enterTime > 10:
+                            joinData['hwid']  = '-'
+                        else:
+                            MSG_QUEUE.put([joinData,enterTime])
+                            continue
+                        userObj = User(**joinData)
                         self.ipdb.checkUser(userObj)
-                        del MSG_QUEUE[nick]
-                    if len(MSG_QUEUE) > 0:
-                        for k, user in MSG_QUEUE.items():
-                            user['hwid'] = '-'
-                            userObj = User(**user)
-                            self.ipdb.checkUser(userObj)
-                            del MSG_QUEUE[k]
-
 
     def getIPRange(self, input):
       input = input.rstrip('.')
