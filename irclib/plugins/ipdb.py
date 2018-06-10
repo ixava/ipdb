@@ -18,6 +18,7 @@ class Plugin:
     @irc3.event(irc3.rfc.CONNECTED)
     def initialize(self, **kwargs):
         """get oper and nickserv authenticated"""
+        self.bot.part('#hangout')
         if 'pass' in CFG:
             self.bot.send('PASS %s' % CFG['pass'])
         if 'oper' in CFG:
@@ -29,7 +30,7 @@ class Plugin:
 
          %%hostsearch <input>...
       """
-      if target != CFG['adminChannel']:
+      if target.lower() != CFG['adminChannel']():
           return
       input = ' '.join(args['<input>'])
       result = self.ipdb.getByHost(input)
