@@ -1,10 +1,10 @@
 import pymysql.cursors
-from user import User
 
 class IPDB:
-    def __init__(self):
-      self.conn = pymysql.connect(host='localhost',
-                                  user='root',
+    def __init__(self, cfg):
+      self.conn = pymysql.connect(host=cfg["host"],
+                                  user=cfg["user"],
+                                  password= cfg['password'] if 'password' in cfg else '',
                                   db='ipdb',
                                   charset='utf8mb4',
                                   cursorclass=pymysql.cursors.DictCursor

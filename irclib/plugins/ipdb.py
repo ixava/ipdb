@@ -13,7 +13,7 @@ class Plugin:
 
     def __init__(self, bot):
         self.bot = bot
-        self.ipdb = IPDB()
+        self.ipdb = IPDB(CFG["db"])
 
     @irc3.event(irc3.rfc.CONNECTED)
     def initialize(self, **kwargs):
