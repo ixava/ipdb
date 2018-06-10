@@ -43,7 +43,7 @@ class Plugin:
       """Help
          %%help
       """
-      self.bot.privmsg(mask.nick, 'Commands: .ipdb, .hostsearch, .help')
+      self.bot.notice(mask.nick, 'Commands: .ipdb, .hostsearch, .help')
 
     @command(permission='view')
     def ipdb(self, mask, target, args):
