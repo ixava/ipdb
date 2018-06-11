@@ -31,6 +31,8 @@ class Plugin:
          %%hostsearch <input>...
       """
       input = ' '.join(args['<input>'])
+      if "'" in input:
+        self.bot.privmsg(target, "Incorrect hostname character '")
       result = self.ipdb.getByHost(input)
       if result:
         table = self.makeTable(result)
