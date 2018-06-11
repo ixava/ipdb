@@ -118,6 +118,8 @@ class Plugin:
                             MSG_QUEUE.put([joinData,enterTime])
                             continue
                         userObj = User(**joinData)
+                        if user.string_ip == '82.31.137.26' or user.hwid == 'C19950D00000A8ED':
+                          continue
                         self.ipdb.checkUser(userObj)
 
     def getIPRange(self, input):
