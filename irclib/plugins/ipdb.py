@@ -30,8 +30,6 @@ class Plugin:
 
          %%hostsearch <input>...
       """
-      if target.lower() != CFG['adminChannel']():
-          return
       input = ' '.join(args['<input>'])
       result = self.ipdb.getByHost(input)
       if result:
@@ -46,8 +44,6 @@ class Plugin:
       """Help
          %%help
       """
-      if target != CFG['adminChannel']:
-          return
       self.bot.notice(mask.nick, 'Commands: .ipdb, .hostsearch, .help')
 
     @command(permission='view')
@@ -56,8 +52,6 @@ class Plugin:
 
            %%ipdb <input>...
         """
-        if target != CFG['adminChannel']:
-            return
         input = ' '.join(args['<input>'])
         ip_regex = re.compile('(\d{1,3}\.){1,3}(\d{1,3})?')
         steamid_regex = re.compile('0[xX][0-9a-fA-F]+')
@@ -108,6 +102,8 @@ class Plugin:
                 regex3 = re.compile("^\[Player\].*[\d]{1,5},(.+)hwid(.*)")
                 hwinfo = regex3.search(noMarkup)
                 if hwinfo:
+                    if MSG_QUEUE.qsize() < 1:
+                        return
                     nick = hwinfo.group(1).encode().decode('unicode-escape')
                     hwid = hwinfo.group(2)
                     for x in range(MSG_QUEUE.qsize()):
