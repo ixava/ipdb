@@ -39,16 +39,6 @@ class IPDB:
       self.dateFormats = "DATE_FORMAT(users.last_seen, '%Y-%m-%d %H:%i') AS last_seen, DATE_FORMAT(users.first_seen, '%Y-%m-%d %H:%i') AS first_seen"
       self.selectFields = "users.id, hwids.hwid, INET_NTOA(ips.ip) as ip, names.name, hostnames.hostname, steamids.steamid, {}".format(self.dateFormats)
 
-    def isNewUser(self, user):
-      cursor = self.conn.cursor()
-
-      sql = 'SELECT count(*) as count from users {} WHERE ips.ip=INET_ATON(%s) AND names.name=%s AND steamids.steamid=%s AND hwids.hwid=%s AND hostnames.hostname=%s'.format(self.innerJoin)
-      cursor.execute(sql,(user.string_ip, user.name, user.steamid, user.hwid, user.hostname))
-
-      if cursor.fetchone()['count'] == 0:
-        return True
-      return False
-
     def isNewProperty(self, value, property, tableName):
       cursor = self.conn.cursor()
       sql = 'SELECT count(*) as count FROM {} WHERE {}=%s'.format(tableName, property)
@@ -64,9 +54,9 @@ class IPDB:
       cursor.execute(sql)
       self.conn.commit()
 
-    def addUser(self, data):
+    def addUser(self, user):
       cursor = self.conn.cursor()
-      sql = 'INSERT IGNORE INTO users (name_id,ip_id,hwid_id,hostname_id,steamid_id) VALUES({},{},{},{},{})'.format(data['name'], data['ip'],data['hwid'],data['hostname'],data['steamid'])
+      sql = 'INSERT IGNORE INTO users (name_id,ip_id,hwid_id,hostname_id,steamid_id) VALUES({},{},{},{},{})'.format(user.name_escaped,user.ip,user.hwid,user.hostname,user.steamid)
       cursor.execute(sql)
       self.conn.commit()
 
@@ -88,16 +78,7 @@ class IPDB:
         return result
       return False
 
-    def getByHost(self, input):
-      cursor = self.conn.cursor()
-      sql = "SELECT {} FROM users {} WHERE hostnames.hostname LIKE '%{}%'".format(self.selectFields, self.innerJoin, input)
-      cursor.execute(sql)
-      result = cursor.fetchall()
-      if result:
-        return result
-      return False
-
-    def getUsers(self, value, property, tableName):
+    def getByProperty(self, value, property, tableName):
       cursor = self.conn.cursor()
       foreign_key = tableName + '.' + property
       sql = "SELECT {} FROM users {} WHERE {} LIKE '%{}%'".format(self.selectFields, self.innerJoin, foreign_key, value)
@@ -107,37 +88,15 @@ class IPDB:
         return result
       return False
 
-    def getUserID(self, name, ip, hwid, steamid, hostname):
+    def getUserID(self, name_escaped, ip, hwid, steamid, hostname):
       cursor = self.conn.cursor()
-      sql = "SELECT users.id FROM users {} WHERE names.name='{}' AND ips.ip={} AND hwids.hwid='{}' AND steamids.steamid='{}' AND hostnames.hostname='{}'".format(self.innerJoin,name,ip,hwid,steamid,hostname)
+      sql = "SELECT users.id FROM users {} WHERE names.name='{}' AND ips.ip={} AND hwids.hwid='{}' AND steamids.steamid='{}' AND hostnames.hostname='{}'".format(self.innerJoin,name_escaped,ip,hwid,steamid,hostname)
       print(sql)
       cursor.execute(sql)
       result = cursor.fetchone()
       if result:
         return result['id']
       return False
-
-    def checkUser(self, user):
-      userID = self.getUserID(user.name, user.ip, user.hwid, user.steamid, user.hostname)
-      print(userID)
-      if not userID:
-        print('User is new')
-        keys = {}
-        for prop in self.dbMeta.values():
-          field = prop['property']
-          value = getattr(user, field)
-
-          if self.isNewProperty(value, **prop):
-            print("prop {} is new".format(field))
-            self.addProperty(value, **prop)
-          else:
-            print("prop {} is not new".format(field))
-
-          keys[field] = self.getPropertyID(value, **prop)
-        self.addUser(keys)
-      else:
-        print('Player not new, updating last seen')
-        self.updateLastSeen('users', userID)
 
     def updateLastSeen(self, tableName, id):
       cursor = self.conn.cursor()

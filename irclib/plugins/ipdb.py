@@ -31,9 +31,7 @@ class Plugin:
          %%hostsearch <input>...
       """
       input = ' '.join(args['<input>'])
-      if "'" in input:
-        self.bot.privmsg(target, "Incorrect hostname character '")
-      result = self.ipdb.getByHost(input)
+      result = self.ipdb.getByProperty(input, 'hostname', 'hostnames')
       if result:
         table = self.makeTable(result)
         for msg in table:
@@ -63,11 +61,11 @@ class Plugin:
             [start, end] = self.getIPRange(input)
             result = self.ipdb.getByIP(User.longIP(start), User.longIP(end))
         elif steamid_regex.match(input):
-            result = self.ipdb.getUsers(input, 'steamid', 'steamids')
+            result = self.ipdb.getByProperty(input, 'steamid', 'steamids')
         elif hwid_regex.match(input):
-            result = self.ipdb.getUsers(input, 'hwid', 'hwids')
+            result = self.ipdb.getByProperty(input, 'hwid', 'hwids')
         else:
-            result = self.ipdb.getUsers(input, 'name', 'names')
+            result = self.ipdb.getByProperty(self.ipdb.conn.escape_string(input), 'name', 'names')
 
         if result:
           table = self.makeTable(result)
@@ -85,8 +83,8 @@ class Plugin:
             color_regex = re.compile("\x1f|\x02|\x12|\x0f|\x16|\x03(?:\d{1,2}(?:,\d{1,2})?)?", re.UNICODE)
             noMarkup = color_regex.sub("", data)
 
-            regex2 = re.compile("^\[Join\] (?:\[Mod\]|\[Manager\]|\[Admin\]|\[Half Mod\]|\[Temp Mod\]|\[Owner\])?(.+) joined.+from ([\d\.]+)(?:,| )[^0]+(0x[^\.]+)?")
-            playerjoin = regex2.search(noMarkup)
+            join_regex = re.compile("^\[Join\] (?:\[Mod\]|\[Manager\]|\[Admin\]|\[Half Mod\]|\[Temp Mod\]|\[Owner\])?(.+) joined.+from ([\d\.]+)(?:,| )[^0]+(0x[^\.]+)?")
+            playerjoin = join_regex.search(noMarkup)
             if playerjoin:
                 joinData = {}
                 joinData['name'] = playerjoin.group(1)
@@ -101,8 +99,8 @@ class Plugin:
                 MSG_QUEUE.put([joinData,time.time()])
 
             else:
-                regex3 = re.compile("^\[Player\].*[\d]{1,5},(.+)hwid(.*)")
-                hwinfo = regex3.search(noMarkup)
+                hwid_regex = re.compile("^\[Player\].*[\d]{1,5},(.+)hwid(.*)")
+                hwinfo = hwid_regex.search(noMarkup)
                 if hwinfo:
                     if MSG_QUEUE.qsize() < 1:
                         return
@@ -122,7 +120,31 @@ class Plugin:
                         userObj = User(**joinData)
                         if userObj.string_ip == '82.31.137.26' or userObj.hwid == 'C19950D00000A8ED':
                           continue
-                        self.ipdb.checkUser(userObj)
+                        self.checkUser(userObj)
+
+    def checkUser(self, user):
+      userID = self.getUserID(user.name_escaped, user.ip, user.hwid, user.steamid, user.hostname)
+      print(userID)
+      if not userID:
+        print('User is new')
+        keys = {}
+        for prop in self.ipdb.dbMeta.values():
+          field = prop['property']
+          value = getattr(user, field)
+          if type(value) == str:
+            value = self.ipdb.conn.escape_string(value)
+          if self.ipdb.isNewProperty(value, **prop):
+            print("prop {} is new".format(field))
+            self.ipdb.addProperty(value, **prop)
+          else:
+            print("prop {} is not new".format(field))
+
+          keys[field] = self.ipdb.getPropertyID(value, **prop)
+        user = User(**keys)
+        self.ipdb.addUser(user)
+      else:
+        print('Player not new, updating last seen')
+        self.ipdb.updateLastSeen('users', userID)
 
     def getIPRange(self, input):
       input = input.rstrip('.')
