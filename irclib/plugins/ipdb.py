@@ -133,8 +133,6 @@ class Plugin:
           value = getattr(user, field)
           if type(value) == str:
             value = self.ipdb.conn.escape_string(value)
-          elif field == 'ip':
-            value = user.string_ip
           if self.ipdb.isNewProperty(value, **prop):
             print("prop {} is new".format(field))
             self.ipdb.addProperty(value, **prop)
