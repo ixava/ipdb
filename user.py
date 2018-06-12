@@ -8,7 +8,7 @@ class User:
     self.hostname = hostname
     self.steamid = steamid
     self.name = name
-    self.name_escaped = name.replace("'","\'")
+    self.name_escaped = name.replace("'","\\'")
     self.hwid = hwid
 
   @staticmethod
