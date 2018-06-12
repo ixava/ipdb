@@ -123,7 +123,7 @@ class Plugin:
                         self.checkUser(userObj)
 
     def checkUser(self, user):
-      userID = self.getUserID(user.name_escaped, user.ip, user.hwid, user.steamid, user.hostname)
+      userID = self.ipdb.getUserID(user.name_escaped, user.ip, user.hwid, user.steamid, user.hostname)
       print(userID)
       if not userID:
         print('User is new')
